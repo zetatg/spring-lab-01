@@ -25,7 +25,7 @@ public class HelloController {
                 "Spring Boot"
         );
     }
-
+    // Individual task: convert input text to uppercase, lowercase, and title case
     @GetMapping("/api/case")
     public CaseResult caseConversion(
             @RequestParam(defaultValue = "Hello World") String text) {
