@@ -1,0 +1,11 @@
+server: 
+  port: 8081
+
+app:
+  mail:
+    enabled: false # no mail is sent in development
+    retry-count: 1
+
+logging:
+  level:
+    kz.iitu: DEBUG
