@@ -1,0 +1,31 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    padding: 40px;
+}
+
+table {
+    border-collapse: collapse;
+    background: white;
+    width: 100%;
+}
+
+th,
+td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background: #eee;
+}
+
+.flash {
+    padding: 10px;
+    background: #dff0d8;
+    border: 1px solid #b5d6a7;
+}
+.is-invalid { border: 2px solid red; }
+.error      { color: red; display: block; }
+.alert      { border: 1px solid red; background: #ffecec; color: red; padding: 8px; margin-bottom: 12px; }

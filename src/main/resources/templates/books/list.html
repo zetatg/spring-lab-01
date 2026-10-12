@@ -1,0 +1,64 @@
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${title}">Catalogue</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+
+<body>
+
+<h1 th:text="${title}">Catalogue</h1>
+
+<!-- Success message after adding a book -->
+<p th:if="${message != null}"
+   class="flash"
+   th:text="${message}">
+</p>
+
+<!-- Link to the new-book form -->
+<p>
+    <a th:href="@{/books/new}" th:text="#{book.new}">
+        Add new book
+    </a>
+</p>
+
+<!-- Filter books by author -->
+<form th:action="@{/books}" method="get">
+    <label for="author">Author:</label>
+    <input id="author"
+           type="text"
+           name="author"
+           th:value="${author}">
+    <button type="submit">Search</button>
+    <a th:href="@{/books}">Clear</a>
+</form>
+
+<table>
+    <thead>
+    <tr>
+        <th>#</th>
+        <th>Title</th>
+        <th>Author</th>
+        <th>Year</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    <tr th:each="book : ${books}">
+        <td th:text="${book.id}">1</td>
+        <td th:text="${book.title}">Title</td>
+        <td th:text="${book.author}">Author</td>
+        <td th:text="${book.year}">2020</td>
+    </tr>
+
+    <tr th:if="${#lists.isEmpty(books)}">
+        <td colspan="4">No books found.</td>
+    </tr>
+    </tbody>
+</table>
+
+</body>
+</html>
