@@ -26,3 +26,6 @@ th {
     background: #dff0d8;
     border: 1px solid #b5d6a7;
 }
+.is-invalid { border: 2px solid red; }
+.error      { color: red; display: block; }
+.alert      { border: 1px solid red; background: #ffecec; color: red; padding: 8px; margin-bottom: 12px; }

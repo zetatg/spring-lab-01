@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Not found</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"></head>
+<body>
+<h1>Book not found</h1>
+<p th:text="${message}">Message</p>
+<a th:href="@{/books}">Back to catalogue</a>
+</body>
+</html>
