@@ -2,6 +2,8 @@ package kz.iitu.springlab.web;
 
 import kz.iitu.springlab.catalog.Book;
 import kz.iitu.springlab.catalog.BookService;
+import kz.iitu.springlab.catalog.DuplicateTitleException;
+import kz.iitu.springlab.catalog.Genre;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +11,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.time.Instant;
+import jakarta.validation.Valid;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
 @Controller
 @RequestMapping("/books")
@@ -32,22 +39,37 @@ public class BookPageController {
         return "books/list";
     }
 
+    @GetMapping("/new")
+    public String newForm(Model model) {
+        model.addAttribute("form", new BookForm());
+        model.addAttribute("genres", Genre.values());
+        return "books/form";
+    }
+
     @PostMapping
-    public String create(
-            @RequestParam String title,
-            @RequestParam String author,
-            @RequestParam int year,
-            RedirectAttributes redirect) {
+    public String create(@Valid @ModelAttribute("form") BookForm form,
+                         BindingResult binding,          // immediately after the form!
+                         Model model,
+                         RedirectAttributes redirect) {
 
-        Book saved = service.create(
-                new Book(null, title, author, year)
-        );
+        if (binding.hasErrors()) {
+            model.addAttribute("genres", Genre.values());   // refill the model
+            return "books/form";
+        }
 
-        redirect.addFlashAttribute(
-                "message",
-                "Book «" + saved.title() + "» has been added"
-        );
+        Book saved;
+        try {
+            saved = service.create(new Book(null, form.getTitle(),
+                    form.getAuthor(), form.getYear(), form.getGenre(), Instant.now()));
+        } catch (DuplicateTitleException ex) {
+            // the page has no problem details: show the conflict as a form error
+            binding.rejectValue("title", "book.duplicate", ex.getMessage());
+            model.addAttribute("genres", Genre.values());
+            return "books/form";
+        }
 
+        redirect.addFlashAttribute("message",
+                "Book «" + saved.title() + "» has been added");
         return "redirect:/books";
     }
 }

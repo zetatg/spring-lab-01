@@ -1,0 +1,89 @@
+### Lab 7 - requests for the IntelliJ HTTP client (or copy them as curl -i commands)
+@host = http://localhost:8080
+
+### 1. List (200, JSON array of BookResponse)
+GET {{host}}/api/books
+
+### 2. Filter by author (200)
+GET {{host}}/api/books?author=Joshua Bloch
+
+### 3. Find one (200)
+GET {{host}}/api/books/1
+
+### 4. Find a missing one (404, application/problem+json)
+GET {{host}}/api/books/999
+
+### 5. Create a valid book (201 + Location header)
+POST {{host}}/api/books
+Content-Type: application/json
+
+{
+  "title": "Refactoring",
+  "author": "Martin Fowler",
+  "year": 2018,
+  "genre": "PROGRAMMING"
+}
+
+### 6. Create with an empty title (400, problem detail from the base class)
+POST {{host}}/api/books
+Content-Type: application/json
+
+{
+  "title": "",
+  "author": "Martin Fowler",
+  "year": 2018,
+  "genre": "PROGRAMMING"
+}
+
+### 7. Create a duplicate (409) - this book is already in the seed data
+POST {{host}}/api/books
+Content-Type: application/json
+
+{
+  "title": "Effective Java",
+  "author": "Joshua Bloch",
+  "year": 2018,
+  "genre": "PROGRAMMING"
+}
+
+### 8. Unreadable body / unknown genre (400)
+POST {{host}}/api/books
+Content-Type: application/json
+
+{
+  "title": "Dune",
+  "author": "Frank Herbert",
+  "year": 1965,
+  "genre": "NOT_A_GENRE"
+}
+
+### 9. Update (200)
+PUT {{host}}/api/books/2
+Content-Type: application/json
+
+{
+  "title": "Clean Code",
+  "author": "Robert Martin",
+  "year": 2009,
+  "genre": "PROGRAMMING"
+}
+
+### 10. Update a missing book (404)
+PUT {{host}}/api/books/999
+Content-Type: application/json
+
+{
+  "title": "Ghost",
+  "author": "Nobody",
+  "year": 2000,
+  "genre": "FICTION"
+}
+
+### 11. Delete (204, no body)
+DELETE {{host}}/api/books/1
+
+### 12. The same DELETE again (404 - our decision, see BookService.delete)
+DELETE {{host}}/api/books/1
+
+### 13. OpenAPI document and Swagger UI (open in the browser)
+GET {{host}}/v3/api-docs
