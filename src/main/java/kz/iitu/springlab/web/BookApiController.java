@@ -1,5 +1,9 @@
 package kz.iitu.springlab.web;
 
+import kz.iitu.springlab.catalog.Genre;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,15 +38,18 @@ public class BookApiController {
         this.mapper = mapper;
     }
 
-    @Operation(summary = "List books, optionally filtered by author")
-    @ApiResponse(responseCode = "200", description = "A JSON array of books (possibly empty)")
+    @Operation(summary = "List books (paged, sorted), optionally filtered by author and/or genre")
+    @ApiResponse(responseCode = "200", description = "A page of books")
     @GetMapping                                                // 200
-    public List<BookResponse> list(
+    public Page<BookResponse> list(
             @Parameter(description = "Exact author name, case-insensitive", example = "Joshua Bloch")
-            @RequestParam(required = false) String author) {
-        return mapper.toResponseList(service.findAll(author));
-    }
+            @RequestParam(required = false) String author,
+            @Parameter(description = "Genre", example = "PROGRAMMING")
+            @RequestParam(required = false) Genre genre,
+            @PageableDefault(size = 5, sort = "title") Pageable pageable) {
 
+        return service.find(genre, author, pageable).map(mapper::toResponse);
+    }
     @Operation(summary = "Find a book by its identifier")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "The book was found"),
@@ -73,9 +80,10 @@ public class BookApiController {
     public ResponseEntity<BookResponse> create(
             @Valid @RequestBody BookRequest request) {
 
-        Book saved = service.create(mapper.toDomain(request));
+        Book saved = service.create(request.title(), request.author(),
+                request.year(), request.genre());
         return ResponseEntity
-                .created(URI.create("/api/books/" + saved.id()))
+                .created(URI.create("/api/books/" + saved.getId()))
                 .body(mapper.toResponse(saved));
     }
 
@@ -97,7 +105,8 @@ public class BookApiController {
             @Parameter(description = "Identifier of the book", example = "1")
             @PathVariable long id,
             @Valid @RequestBody BookRequest request) {
-        return mapper.toResponse(service.update(id, mapper.toDomain(request)));
+        return mapper.toResponse(service.update(id, request.title(),
+                request.author(), request.year(), request.genre()));
     }
 
     @Operation(summary = "Delete a book")

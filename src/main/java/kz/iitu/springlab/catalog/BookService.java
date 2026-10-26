@@ -1,36 +1,61 @@
 package kz.iitu.springlab.catalog;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional(readOnly = true)
 public class BookService {
 
     private final BookRepository repository;
+    private final AuthorRepository authors;
 
-    public BookService(BookRepository repository) {
+    public BookService(BookRepository repository, AuthorRepository authors) {
         this.repository = repository;
+        this.authors = authors;
     }
 
+    /** Used by the HTML page (lab 6): the whole list, author already loaded. */
     public List<Book> findAll(String author) {
-        if (author == null) {
-            return repository.findAll();
+        if (author == null || author.isBlank()) {
+            return repository.findAllWithAuthor();
         }
+        return repository.findByAuthorNameIgnoreCaseOrderById(author);
+    }
 
-        return repository.findAll().stream()
-                .filter(book -> book.author().equalsIgnoreCase(author))
-                .toList();
+    /** Used by the REST API (lab 8): paged and sorted. */
+    public Page<Book> find(Genre genre, String author, Pageable pageable) {
+        boolean hasAuthor = author != null && !author.isBlank();
+
+        if (genre != null && hasAuthor) {
+            return repository.findByGenreAndAuthorNameIgnoreCase(genre, author, pageable);
+        }
+        if (genre != null) {
+            return repository.findByGenre(genre, pageable);
+        }
+        if (hasAuthor) {
+            return repository.findByAuthorNameIgnoreCase(author, pageable);
+        }
+        return repository.findAll(pageable);
     }
 
     public Optional<Book> findById(long id) {
-        return repository.findById(id);
+        return repository.findWithAuthorById(id);
     }
 
     /** @throws DuplicateTitleException if the same title by the same author exists (-> 409) */
-    public Book create(Book book) {
-        ensureUnique(book, null);
+    @Transactional
+    public Book create(String title, String authorName, int year, Genre genre) {
+        ensureUnique(title, authorName, null);
+
+        Author author = findOrCreateAuthor(authorName);
+        Book book = new Book(title, genre, year);
+        author.addBook(book);                       // both sides in step
         return repository.save(book);
     }
 
@@ -38,38 +63,46 @@ public class BookService {
      * @throws BookNotFoundException    if there is no book with this id (-> 404)
      * @throws DuplicateTitleException  if the new title/author collides with ANOTHER book (-> 409)
      */
-    public Book update(long id, Book book) {
-        Book existing = repository.findById(id)
+    @Transactional
+    public Book update(long id, String title, String authorName, int year, Genre genre) {
+        Book book = repository.findWithAuthorById(id)
                 .orElseThrow(() -> new BookNotFoundException(id));
-        ensureUnique(book, id);
+        ensureUnique(title, authorName, id);
 
-        // id and createdAt belong to the server, not to the client
-        return repository.save(new Book(id, book.title(), book.author(),
-                book.year(), book.genre(), existing.createdAt()));
+        book.setTitle(title);
+        book.setYear(year);
+        book.setGenre(genre);
+        book.setAuthor(findOrCreateAuthor(authorName));
+        return book;        // no save(): the entity is managed, the change is written at commit
     }
 
-    /**
-     * Design decision for the second DELETE of the same id: 404.
-     * The server state after one or ten calls is the same (the book is gone),
-     * so DELETE stays idempotent, but the client is told the truth:
-     * "there is nothing with this id".
-     *
-     * @throws BookNotFoundException if there is no book with this id (-> 404)
-     */
+    /** 404 for the second DELETE of the same id (decision from lab 7). */
+    @Transactional
     public void delete(long id) {
-        if (!repository.deleteById(id)) {
+        if (!repository.existsById(id)) {
             throw new BookNotFoundException(id);
         }
+        repository.deleteById(id);
     }
 
-    private void ensureUnique(Book candidate, Long ignoredId) {
-        boolean duplicate = repository.findAll().stream()
-                .filter(b -> !b.id().equals(ignoredId))
-                .anyMatch(b -> b.title().equalsIgnoreCase(candidate.title())
-                        && b.author().equalsIgnoreCase(candidate.author()));
+    /** Task 3.2: the bulk update needs a transaction around it. */
+    @Transactional
+    public int archiveOlderThan(int year) {
+        return repository.archiveOlderThan(year);
+    }
+
+    private Author findOrCreateAuthor(String name) {
+        return authors.findByNameIgnoreCase(name)
+                .orElseGet(() -> authors.save(new Author(name, null)));
+    }
+
+    private void ensureUnique(String title, String authorName, Long ignoredId) {
+        boolean duplicate = repository
+                .findByTitleIgnoreCaseAndAuthorNameIgnoreCase(title, authorName).stream()
+                .anyMatch(b -> !b.getId().equals(ignoredId));
 
         if (duplicate) {
-            throw new DuplicateTitleException(candidate.title(), candidate.author());
+            throw new DuplicateTitleException(title, authorName);
         }
     }
 }

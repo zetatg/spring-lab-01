@@ -27,7 +27,7 @@
 
 <!-- Filter books by author -->
 <form th:action="@{/books}" method="get">
-    <label for="author">Author:</label>
+    <td th:text="${book.author.name}">Author</td>
     <input id="author"
            type="text"
            name="author"

@@ -59,8 +59,8 @@ public class BookPageController {
 
         Book saved;
         try {
-            saved = service.create(new Book(null, form.getTitle(),
-                    form.getAuthor(), form.getYear(), form.getGenre(), Instant.now()));
+            saved = service.create(form.getTitle(), form.getAuthor(),
+                    form.getYear(), form.getGenre());
         } catch (DuplicateTitleException ex) {
             // the page has no problem details: show the conflict as a form error
             binding.rejectValue("title", "book.duplicate", ex.getMessage());
@@ -69,7 +69,7 @@ public class BookPageController {
         }
 
         redirect.addFlashAttribute("message",
-                "Book «" + saved.title() + "» has been added");
+                "Book «" + saved.getTitle() + "» has been added");
         return "redirect:/books";
     }
 }

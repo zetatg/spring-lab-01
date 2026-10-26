@@ -1,47 +1,69 @@
 package kz.iitu.springlab.catalog;
 
-import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
-@Repository
-public class BookRepository {
+public interface BookRepository extends JpaRepository<Book, Long> {
 
-    private final Map<Long, Book> storage = new ConcurrentHashMap<>();
-    private final AtomicLong sequence = new AtomicLong();
+    // ---- Task 3.1 / Listing 4: five derived queries
+    List<Book> findByGenre(Genre genre);
 
-    public BookRepository() {
-        save(new Book(null, "Effective Java", "Joshua Bloch", 2018, Genre.PROGRAMMING, Instant.now()));
-        save(new Book(null, "Clean Code", "Robert Martin", 2008, Genre.PROGRAMMING, Instant.now()));
-        save(new Book(null, "Spring in Action", "Craig Walls", 2022, Genre.PROGRAMMING, Instant.now()));
-    }
+    List<Book> findByTitleContainingIgnoreCase(String fragment);
 
-    /** Sorted by id so that the JSON array has a stable order. */
-    public List<Book> findAll() {
-        return storage.values().stream()
-                .sorted(Comparator.comparing(Book::id))
-                .toList();
-    }
+    List<Book> findByYearBetweenOrderByYearDesc(int from, int to);
 
-    public Optional<Book> findById(long id) {
-        return Optional.ofNullable(storage.get(id));
-    }
+    List<Book> findTop3ByGenreOrderByYearDesc(Genre genre);
 
-    public Book save(Book book) {
-        long id = book.id() != null ? book.id() : sequence.incrementAndGet();
-        Book stored = new Book(id, book.title(), book.author(), book.year(),
-                book.genre(), book.createdAt());
-        storage.put(id, stored);
-        return stored;
-    }
+    long countByAuthorName(String name);        // a nested property
 
-    public boolean deleteById(long id) {
-        return storage.remove(id) != null;
-    }
+    // ---- Task 3.2 / Listing 5: JPQL and a bulk update
+    @Query("""
+           select b from Book b
+           where b.genre = :genre and b.year >= :year
+           order by b.title""")
+    List<Book> search(@Param("genre") Genre genre, @Param("year") int year);
+
+    @Modifying(clearAutomatically = true)
+    @Query("update Book b set b.archived = true where b.year < :year")
+    int archiveOlderThan(@Param("year") int year);     // @Transactional on the caller
+
+    // ---- Task 3.4 / Listing 6: the cure for N+1
+    @Query("select b from Book b join fetch b.author order by b.id")
+    List<Book> findAllWithAuthor();
+
+    // ---- Task 4 / Listing 7: paged versions (author loaded, see the note at the top)
+    @EntityGraph(attributePaths = "author")
+    Page<Book> findByGenre(Genre genre, Pageable pageable);
+
+    @EntityGraph(attributePaths = "author")
+    Page<Book> findByAuthorNameIgnoreCase(String author, Pageable pageable);
+
+    @EntityGraph(attributePaths = "author")
+    Page<Book> findByGenreAndAuthorNameIgnoreCase(Genre genre, String author, Pageable pageable);
+
+    @Override
+    @EntityGraph(attributePaths = "author")
+    Page<Book> findAll(Pageable pageable);
+
+    // Task 4.3: the Slice variant, used by Lab8Demo so you do not have to edit the controller
+    @EntityGraph(attributePaths = "author")
+    Slice<Book> findSliceByGenre(Genre genre, Pageable pageable);
+
+    // ---- helpers for BookService
+    @EntityGraph(attributePaths = "author")
+    Optional<Book> findWithAuthorById(Long id);
+
+    @EntityGraph(attributePaths = "author")
+    List<Book> findByAuthorNameIgnoreCaseOrderById(String author);
+
+    List<Book> findByTitleIgnoreCaseAndAuthorNameIgnoreCase(String title, String author);
 }
