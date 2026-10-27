@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!-- used as: <head th:replace="~{fragments/layout :: head(#{some.key})}"></head> -->
+<head th:fragment="head(pageTitle)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${pageTitle} + ' - ' + #{app.name}">Catalogue - Book Catalogue</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+
+<body>
+
+<!-- active: list | new | none;  langPath: where the EN/RU links should lead -->
+<header class="site-header" th:fragment="header(active, langPath)">
+    <div class="wrap bar">
+        <a class="brand" th:href="@{/}" th:text="#{app.name}">Book Catalogue</a>
+
+        <nav aria-label="Main">
+            <a th:href="@{/books}" th:text="#{nav.catalogue}"
+               th:classappend="${active == 'list'} ? 'is-active'"
+               th:attr="aria-current=${active == 'list'} ? 'page'">Catalogue</a>
+            <a th:href="@{/books/new}" th:text="#{book.new}"
+               th:classappend="${active == 'new'} ? 'is-active'"
+               th:attr="aria-current=${active == 'new'} ? 'page'">New book</a>
+        </nav>
+
+        <div class="lang" role="group" aria-label="Language">
+            <a th:href="@{${langPath}(lang='en')}" lang="en" hreflang="en"
+               th:classappend="${#locale.language == 'en'} ? 'is-active'">EN</a>
+            <a th:href="@{${langPath}(lang='ru')}" lang="ru" hreflang="ru"
+               th:classappend="${#locale.language == 'ru'} ? 'is-active'">RU</a>
+        </div>
+    </div>
+</header>
+
+<!-- one book on the shelf; the cloth colour comes from the author (see SpineColors.java) -->
+<li class="spine" th:fragment="spine(book)"
+    th:classappend="'spine-' + ${@spineColors.of(book.author?.name)}">
+    <span class="spine-no" th:text="${book.id}">1</span>
+    <span class="spine-main">
+        <span class="spine-title" th:text="${book.title}">Effective Java</span>
+        <span class="spine-author" th:text="${book.author?.name}">Joshua Bloch</span>
+    </span>
+    <span class="spine-genre" th:text="#{${'genre.' + book.genre.name()}}">Programming</span>
+    <span class="spine-year" th:text="${book.year}">2018</span>
+</li>
+
+<footer class="site-footer" th:fragment="footer">
+    <div class="wrap" th:text="#{footer.note}">Course project built with Spring Boot.</div>
+</footer>
+
+</body>
+</html>

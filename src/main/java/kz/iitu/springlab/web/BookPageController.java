@@ -68,8 +68,8 @@ public class BookPageController {
             return "books/form";
         }
 
-        redirect.addFlashAttribute("message",
-                "Book «" + saved.getTitle() + "» has been added");
+        // only the title travels; the sentence itself comes from messages*.properties (EN/RU)
+        redirect.addFlashAttribute("addedTitle", saved.getTitle());
         return "redirect:/books";
     }
 }

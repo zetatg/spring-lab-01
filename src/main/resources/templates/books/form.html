@@ -1,48 +1,130 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title th:text="#{book.new}">New book</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}">
+<html lang="en" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(#{book.new})}">
+    <title>New book</title>
 </head>
 <body>
-<h1 th:text="#{book.new}">New book</h1>
 
-<p>
-    <a th:href="@{/books/new(lang='en')}">EN</a> |
-    <a th:href="@{/books/new(lang='ru')}">RU</a>
-</p>
+<header th:replace="~{fragments/layout :: header('new', '/books/new')}"></header>
 
-<form th:action="@{/books}" th:object="${form}" method="post">
+<main class="wrap">
 
-    <div class="alert" th:if="${#fields.hasAnyErrors()}">
-        <ul>
-            <li th:each="e : ${#fields.allErrors()}" th:text="${e}"></li>
-        </ul>
+    <div class="page-head">
+        <h1 th:text="#{book.new}">New book</h1>
     </div>
 
-    <label th:text="#{book.title}">Title</label>
-    <input type="text" th:field="*{title}" th:errorclass="is-invalid">
-    <span class="error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></span>
+    <!-- the book as it will stand on the shelf; filled in by the script below while you type -->
+    <div class="preview">
+        <p class="preview-label" th:text="#{form.preview}">Preview</p>
+        <ol class="shelf">
+            <li id="preview" class="spine spine-0"
+                th:attr="data-title=#{book.title},data-author=#{book.author},data-year=#{book.year},data-genre=#{book.genre}">
+                <span class="spine-no">–</span>
+                <span class="spine-main">
+                    <span class="spine-title is-placeholder">Title</span>
+                    <span class="spine-author is-placeholder">Author</span>
+                </span>
+                <span class="spine-genre is-placeholder">Genre</span>
+                <span class="spine-year is-placeholder">Year</span>
+            </li>
+        </ol>
+    </div>
 
-    <label th:text="#{book.author}">Author</label>
-    <input type="text" th:field="*{author}" th:errorclass="is-invalid">
-    <span class="error" th:if="${#fields.hasErrors('author')}" th:errors="*{author}"></span>
+    <form class="form" th:action="@{/books}" th:object="${form}" method="post" novalidate>
 
-    <label th:text="#{book.year}">Year</label>
-    <input type="number" th:field="*{year}" th:errorclass="is-invalid">
-    <span class="error" th:if="${#fields.hasErrors('year')}" th:errors="*{year}"></span>
+        <div class="error-summary" role="alert" th:if="${#fields.hasAnyErrors()}">
+            <strong th:text="#{form.errors}">Correct the fields marked below and save again.</strong>
+        </div>
 
-    <label th:text="#{book.genre}">Genre</label>
-    <select th:field="*{genre}" th:errorclass="is-invalid">
-        <option value="">—</option>
-        <option th:each="g : ${genres}" th:value="${g}" th:text="${g}"></option>
-    </select>
-    <span class="error" th:if="${#fields.hasErrors('genre')}" th:errors="*{genre}"></span>
+        <div class="field">
+            <label for="title" th:text="#{book.title}">Title</label>
+            <input type="text" th:field="*{title}" th:errorclass="is-invalid"
+                   th:attr="aria-invalid=${#fields.hasErrors('title')}">
+            <p class="field-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">Title error</p>
+        </div>
 
-    <label><input type="checkbox" th:field="*{available}"> Available</label>
+        <div class="field">
+            <label for="author" th:text="#{book.author}">Author</label>
+            <input type="text" th:field="*{author}" th:errorclass="is-invalid"
+                   th:attr="aria-invalid=${#fields.hasErrors('author')}">
+            <p class="field-error" th:if="${#fields.hasErrors('author')}" th:errors="*{author}">Author error</p>
+        </div>
 
-    <button type="submit" th:text="#{form.submit}">Save</button>
-</form>
+        <div class="field-row">
+            <div class="field">
+                <label for="year" th:text="#{book.year}">Year</label>
+                <input type="number" th:field="*{year}" th:errorclass="is-invalid"
+                       th:attr="aria-invalid=${#fields.hasErrors('year')}">
+                <p class="field-error" th:if="${#fields.hasErrors('year')}" th:errors="*{year}">Year error</p>
+            </div>
+
+            <div class="field">
+                <label for="genre" th:text="#{book.genre}">Genre</label>
+                <select th:field="*{genre}" th:errorclass="is-invalid"
+                        th:attr="aria-invalid=${#fields.hasErrors('genre')}">
+                    <option value="" th:text="#{form.select}">Select a genre</option>
+                    <option th:each="g : ${genres}" th:value="${g}"
+                            th:text="#{${'genre.' + g.name()}}">Programming</option>
+                </select>
+                <p class="field-error" th:if="${#fields.hasErrors('genre')}" th:errors="*{genre}">Genre error</p>
+            </div>
+        </div>
+
+        <label class="check">
+            <input type="checkbox" th:field="*{available}">
+            <span th:text="#{book.available}">Available</span>
+        </label>
+
+        <div class="form-actions">
+            <button type="submit" class="btn" th:text="#{form.submit}">Save</button>
+            <a class="link-quiet" th:href="@{/books}" th:text="#{form.cancel}">Cancel</a>
+        </div>
+    </form>
+
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script th:inline="none">
+    (function () {
+        var form = document.querySelector('form.form');
+        var spine = document.getElementById('preview');
+        if (!form || !spine) { return; }
+
+        var title = form.elements['title'];
+        var author = form.elements['author'];
+        var year = form.elements['year'];
+        var genre = form.elements['genre'];
+
+        // the same rule as SpineColors.java: hash of the lower-cased name, modulo 5
+        function cloth(name) {
+            var s = name.trim().toLowerCase();
+            if (!s) { return 0; }
+            var h = 0;
+            for (var i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
+            return ((h % 5) + 5) % 5;
+        }
+
+        function put(selector, value, fallback) {
+            var el = spine.querySelector(selector);
+            el.textContent = value || fallback;
+            el.classList.toggle('is-placeholder', !value);
+        }
+
+        function update() {
+            var genreText = genre.value ? genre.options[genre.selectedIndex].text : '';
+            put('.spine-title', title.value.trim(), spine.dataset.title);
+            put('.spine-author', author.value.trim(), spine.dataset.author);
+            put('.spine-year', year.value, spine.dataset.year);
+            put('.spine-genre', genreText, spine.dataset.genre);
+            spine.className = 'spine spine-' + cloth(author.value);
+        }
+
+        form.addEventListener('input', update);
+        form.addEventListener('change', update);
+        update();
+    })();
+</script>
+
 </body>
 </html>

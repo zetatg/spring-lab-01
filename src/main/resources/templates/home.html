@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(#{home.title})}">
+    <title>Book Catalogue</title>
+</head>
+<body>
+
+<header th:replace="~{fragments/layout :: header('none', '/')}"></header>
+
+<main class="wrap">
+
+    <section>
+        <h1 th:text="#{home.title}">A small catalogue of books</h1>
+        <p class="lead" th:text="#{home.lead}">Course project for Spring Boot: Thymeleaf pages, a REST API and a PostgreSQL database.</p>
+        <p class="actions">
+            <a class="btn" th:href="@{/books}" th:text="#{home.open}">Open the catalogue</a>
+            <a class="btn btn-secondary" th:href="@{/books/new}" th:text="#{book.new}">New book</a>
+        </p>
+    </section>
+
+    <section class="recent">
+        <h2 th:text="#{home.recent}">Recently added</h2>
+        <ol class="shelf">
+            <th:block th:each="book : ${recent}">
+                <li th:replace="~{fragments/layout :: spine(${book})}"></li>
+            </th:block>
+            <li class="spine spine-gap" th:if="${#lists.isEmpty(recent)}"
+                th:text="#{catalog.empty}">No books found.</li>
+        </ol>
+    </section>
+
+    <section class="dev">
+        <h2 th:text="#{home.dev}">For developers</h2>
+        <dl class="links">
+            <div>
+                <dt><a th:href="@{/swagger-ui.html}">Swagger UI</a></dt>
+                <dd th:text="#{home.swagger}">Interactive documentation of the REST API</dd>
+            </div>
+            <div>
+                <dt><a th:href="@{/api/books}">/api/books</a></dt>
+                <dd th:text="#{home.api}">The first page of books as JSON</dd>
+            </div>
+            <div>
+                <dt><a th:href="@{/v3/api-docs}">/v3/api-docs</a></dt>
+                <dd th:text="#{home.docs}">The API description in OpenAPI format</dd>
+            </div>
+        </dl>
+    </section>
+
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+</body>
+</html>
