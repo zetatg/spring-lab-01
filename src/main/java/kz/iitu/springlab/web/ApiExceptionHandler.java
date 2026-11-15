@@ -1,5 +1,6 @@
 package kz.iitu.springlab.web;
 
+import kz.iitu.springlab.aspect.RateLimitExceededException;
 import kz.iitu.springlab.catalog.BookNotFoundException;
 import kz.iitu.springlab.catalog.DuplicateTitleException;
 import org.springframework.http.HttpHeaders;
@@ -38,6 +39,18 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setType(URI.create("https://api.iitu.kz/errors/book-not-found"));
         problem.setTitle("Book not found");
         return problem;
+    }
+
+    /** Lab 4, variant 7: 429 Too Many Requests with a Retry-After header. */
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ProblemDetail> handleRateLimit(RateLimitExceededException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());              // 429
+        problem.setType(URI.create("https://api.iitu.kz/errors/rate-limit"));
+        problem.setTitle("Too many requests");
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .body(problem);
     }
 
     @ExceptionHandler(DuplicateTitleException.class)

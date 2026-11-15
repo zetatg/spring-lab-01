@@ -8,18 +8,15 @@
 <header th:replace="~{fragments/layout :: header('none', '/books')}"></header>
 
 <main class="wrap">
-    <h1 th:text="#{error.notfound.title}">Book not found</h1>
-    <p class="lead" th:text="#{error.notfound.text}">There is no book with this number in the catalogue. It may have been removed.</p>
-
-    <div class="narrow-block">
-        <ol class="shelf">
-            <li class="spine spine-gap" th:text="${message != null} ? ${message} : #{error.notfound.title}">Book with id 42 not found</li>
-        </ol>
+    <div class="not-found">
+        <span class="big-404" aria-hidden="true">404</span>
+        <h1 th:text="#{error.notfound.title}">Book not found</h1>
+        <p class="lead" th:text="#{error.notfound.text}">There is no book with this number in the catalogue.</p>
+        <p class="meta" th:if="${message != null}" th:text="${message}">Book with id 42 not found</p>
+        <p class="actions">
+            <a class="btn" th:href="@{/books}" th:text="#{error.notfound.back}">Back to the catalogue</a>
+        </p>
     </div>
-
-    <p class="actions">
-        <a class="btn" th:href="@{/books}" th:text="#{error.notfound.back}">Back to the catalogue</a>
-    </p>
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>

@@ -1,53 +1,89 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
 <!-- used as: <head th:replace="~{fragments/layout :: head(#{some.key})}"></head> -->
 <head th:fragment="head(pageTitle)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="${pageTitle} + ' - ' + #{app.name}">Catalogue - Book Catalogue</title>
+    <title th:text="${pageTitle} + ' · ' + #{app.name}">Catalogue · Book Catalogue</title>
     <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 
 <body>
 
-<!-- active: list | new | none;  langPath: where the EN/RU links should lead -->
+<!-- active: list | new | none;  langPath: where the EN/RU/KK links should lead -->
 <header class="site-header" th:fragment="header(active, langPath)">
     <div class="wrap bar">
-        <a class="brand" th:href="@{/}" th:text="#{app.name}">Book Catalogue</a>
+        <a class="brand" th:href="@{/}">
+            <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span th:text="#{app.name}">Book Catalogue</span>
+        </a>
 
-        <nav aria-label="Main">
+        <nav class="nav" aria-label="Main">
             <a th:href="@{/books}" th:text="#{nav.catalogue}"
                th:classappend="${active == 'list'} ? 'is-active'"
                th:attr="aria-current=${active == 'list'} ? 'page'">Catalogue</a>
-            <a th:href="@{/books/new}" th:text="#{book.new}"
+            <!-- hiding is a courtesy, not a control: the URL rule and @PreAuthorize protect the endpoint -->
+            <a sec:authorize="hasRole('ADMIN')" th:href="@{/books/new}" th:text="#{book.new}"
                th:classappend="${active == 'new'} ? 'is-active'"
                th:attr="aria-current=${active == 'new'} ? 'page'">New book</a>
+            <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin}" th:text="#{nav.admin}"
+               th:classappend="${active == 'admin'} ? 'is-active'"
+               th:attr="aria-current=${active == 'admin'} ? 'page'">Administration</a>
         </nav>
 
-        <div class="lang" role="group" aria-label="Language">
-            <a th:href="@{${langPath}(lang='en')}" lang="en" hreflang="en"
+        <div class="lang" role="group" th:attr="aria-label=#{lang.label}">
+            <a th:href="@{${langPath}(lang='en')}" lang="en" hreflang="en" title="English"
                th:classappend="${#locale.language == 'en'} ? 'is-active'">EN</a>
-            <a th:href="@{${langPath}(lang='ru')}" lang="ru" hreflang="ru"
+            <a th:href="@{${langPath}(lang='ru')}" lang="ru" hreflang="ru" title="Русский"
                th:classappend="${#locale.language == 'ru'} ? 'is-active'">RU</a>
+            <a th:href="@{${langPath}(lang='kk')}" lang="kk" hreflang="kk" title="Қазақша"
+               th:classappend="${#locale.language == 'kk'} ? 'is-active'">KZ</a>
         </div>
+
+        <!-- task 3.3: the view knows who is looking at it -->
+        <div class="user" sec:authorize="isAuthenticated()">
+            <span class="user-avatar" aria-hidden="true"
+                  th:text="${#strings.toUpperCase(#strings.substring(#authentication.name, 0, 1))}">U</span>
+            <span class="user-info">
+                <span class="user-name" sec:authentication="name">user</span>
+                <span class="user-roles" sec:authentication="principal.authorities">[ROLE_USER]</span>
+            </span>
+            <!-- logout changes state, so it is a POST form (Thymeleaf adds the _csrf field) -->
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" class="btn-link" th:text="#{nav.logout}">Log out</button>
+            </form>
+        </div>
+        <a class="btn btn-small" sec:authorize="!isAuthenticated()"
+           th:href="@{/login}" th:text="#{nav.login}">Log in</a>
     </div>
 </header>
 
-<!-- one book on the shelf; the cloth colour comes from the author (see SpineColors.java) -->
-<li class="spine" th:fragment="spine(book)"
-    th:classappend="'spine-' + ${@spineColors.of(book.author?.name)}">
-    <span class="spine-no" th:text="${book.id}">1</span>
-    <span class="spine-main">
-        <span class="spine-title" th:text="${book.title}">Effective Java</span>
-        <span class="spine-author" th:text="${book.author?.name}">Joshua Bloch</span>
-    </span>
-    <span class="spine-genre" th:text="#{${'genre.' + book.genre.name()}}">Programming</span>
-    <span class="spine-year" th:text="${book.year}">2018</span>
-</li>
+<!-- one book as a catalogue card; the cover colour comes from the author (see SpineColors.java) -->
+<article class="card" th:fragment="card(book)"
+         th:classappend="'tone-' + ${@spineColors.of(book.author?.name)}">
+    <div class="card-cover">
+        <span class="card-no" th:text="#{card.no} + ' ' + ${book.id}">No. 1</span>
+        <h3 class="card-title" th:text="${book.title}">Effective Java</h3>
+        <span class="card-cover-author">
+            <span th:text="${book.author?.name}">Joshua Bloch</span>
+            <span class="card-publisher" th:if="${book.publisher != null}" th:text="${book.publisher.name}">Addison-Wesley</span>
+        </span>
+    </div>
+    <div class="card-body">
+        <span class="chip" th:text="#{${'genre.' + book.genre.name()}}">Programming</span>
+        <span class="card-year" th:text="${book.year}">2018</span>
+    </div>
+</article>
 
 <footer class="site-footer" th:fragment="footer">
-    <div class="wrap" th:text="#{footer.note}">Course project built with Spring Boot.</div>
+    <div class="wrap foot">
+        <span th:text="#{footer.note}">Course project built with Spring Boot.</span>
+        <span class="foot-links">
+            <a th:href="@{/swagger-ui.html}">Swagger UI</a>
+            <a th:href="@{/h2-console}">H2 console</a>
+        </span>
+    </div>
 </footer>
 
 </body>

@@ -18,12 +18,17 @@ import kz.iitu.springlab.catalog.BookService;
 import kz.iitu.springlab.web.dto.BookMapper;
 import kz.iitu.springlab.web.dto.BookRequest;
 import kz.iitu.springlab.web.dto.BookResponse;
+import org.springframework.data.domain.Window;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import jakarta.validation.constraints.NotEmpty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "Books", description = "The catalogue of books")
 @RestController
@@ -50,6 +55,56 @@ public class BookApiController {
 
         return service.find(genre, author, pageable).map(mapper::toResponse);
     }
+    @Operation(summary = "Create several books at once, all or nothing (lab 5, variant 7)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "All books were created; the body lists them"),
+            @ApiResponse(responseCode = "400", description = "One of the records breaks a validation rule",
+                    content = @Content(mediaType = "application/problem+json",
+                            schema = @Schema(implementation = ProblemDetail.class))),
+            @ApiResponse(responseCode = "409", description = "One of the records duplicates an existing book; nothing was saved",
+                    content = @Content(mediaType = "application/problem+json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
+    })
+    @PostMapping("/bulk")                                      // 201 + the list created
+    public ResponseEntity<List<BookResponse>> createBulk(
+            @RequestBody @NotEmpty List<@Valid BookRequest> requests) {
+        List<Book> created = service.createAll(requests.stream()
+                .map(r -> new BookService.BookDraft(r.title(), r.author(), r.year(), r.genre()))
+                .toList());
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponseList(created));
+    }
+
+    @Operation(summary = "Keyset scrolling: three books after the given id (lab 8, variant 7)")
+    @GetMapping("/scroll")
+    public Map<String, Object> scroll(
+            @Parameter(description = "The id of the last book already seen; empty for the first window", example = "3")
+            @RequestParam(required = false) Long after) {
+        Window<Book> window = service.scroll(after);
+        List<BookResponse> content = mapper.toResponseList(window.getContent());
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("content", content);
+        out.put("hasNext", window.hasNext());
+        out.put("nextAfter", content.isEmpty() ? null : content.get(content.size() - 1).id());
+        return out;
+    }
+
+    @Operation(summary = "Search by a fragment of the title, case-insensitive (lab 5, variant 1)")
+    @ApiResponse(responseCode = "200", description = "The matching books; an empty array when nothing matches")
+    @GetMapping("/search")                                     // always 200, never 404
+    public List<BookResponse> search(
+            @Parameter(description = "A fragment of the title", example = "clean")
+            @RequestParam(defaultValue = "") String title) {
+        return mapper.toResponseList(service.searchByTitle(title));
+    }
+
+    @Operation(summary = "Books of one publisher, through the derived query (lab 8, variant 1)")
+    @GetMapping("/by-publisher")
+    public List<BookResponse> byPublisher(
+            @Parameter(description = "Publisher name, case-insensitive", example = "Prentice Hall")
+            @RequestParam String name) {
+        return mapper.toResponseList(service.findByPublisher(name));
+    }
+
     @Operation(summary = "Find a book by its identifier")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "The book was found"),

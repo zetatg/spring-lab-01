@@ -1,6 +1,8 @@
 package kz.iitu.springlab.web;
 
+import kz.iitu.springlab.catalog.Book;
 import kz.iitu.springlab.catalog.BookService;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
@@ -18,10 +20,11 @@ public class HomeController {
 
     @GetMapping("/")
     public String home(Model model) {
-        // the five newest books; BookService.find loads the author with the book
-        model.addAttribute("recent", service
-                .find(null, null, PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "id")))
-                .getContent());
+        // the six newest books; BookService.find loads the author with the book
+        Page<Book> page = service
+                .find(null, null, PageRequest.of(0, 6, Sort.by(Sort.Direction.DESC, "id")));
+        model.addAttribute("recent", page.getContent());
+        model.addAttribute("total", page.getTotalElements());
         return "home";
     }
 }

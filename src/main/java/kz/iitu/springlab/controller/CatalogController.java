@@ -1,5 +1,6 @@
 package kz.iitu.springlab.controller;
 
+import kz.iitu.springlab.aspect.CallCounterAspect;
 import kz.iitu.springlab.service.CatalogService;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.web.bind.annotation.*;
@@ -11,9 +12,11 @@ import java.util.Map;
 public class CatalogController {
 
     private final CatalogService catalogService;
+    private final CallCounterAspect counter;
 
-    public CatalogController(CatalogService catalogService) {
+    public CatalogController(CatalogService catalogService, CallCounterAspect counter) {
         this.catalogService = catalogService;
+        this.counter = counter;
     }
 
     @GetMapping("/api/lab4/item/{id}")
@@ -49,8 +52,21 @@ public class CatalogController {
         );
     }
 
+    /** After the fix: 2 audit records for the inner remove() calls. */
     @GetMapping("/api/lab4/remove-twice/{id}")
     public String removeTwice(@PathVariable long id) {
         return catalogService.removeTwice(id);
+    }
+
+    /** Before the fix, kept for the demonstration: 0 audit records for the inner calls. */
+    @GetMapping("/api/lab4/remove-twice-this/{id}")
+    public String removeTwiceViaThis(@PathVariable long id) {
+        return catalogService.removeTwiceViaThis(id);
+    }
+
+    /** Individual variant 1: calls per service method since start-up. */
+    @GetMapping("/api/lab4/stats")
+    public Map<String, Integer> stats() {
+        return counter.getStatistics();
     }
 }

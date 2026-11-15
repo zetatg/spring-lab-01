@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head(#{denied.title})}">
+    <title>Access denied</title>
+</head>
+<body>
+
+<header th:replace="~{fragments/layout :: header('none', '/books')}"></header>
+
+<main class="wrap">
+    <!-- variant 3: shown by accessDeniedPage("/403") when a logged-in user lacks the role -->
+    <div class="not-found">
+        <span class="big-404" aria-hidden="true">403</span>
+        <h1 th:text="#{denied.title}">Access denied</h1>
+        <p class="lead" th:text="#{denied.text}">You are logged in, but your role does not allow this page.</p>
+        <p class="meta" sec:authorize="isAuthenticated()">
+            <span th:text="#{denied.as}">Signed in as</span>
+            <strong sec:authentication="name">user</strong>
+            <span sec:authentication="principal.authorities">[ROLE_USER]</span>
+        </p>
+        <p class="actions">
+            <a class="btn" th:href="@{/books}" th:text="#{error.notfound.back}">Back to the catalogue</a>
+        </p>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(#{login.title})}">
+    <title>Log in</title>
+</head>
+<body>
+
+<header th:replace="~{fragments/layout :: header('none', '/login')}"></header>
+
+<main class="wrap">
+    <div class="auth">
+        <h1 th:text="#{login.title}">Log in</h1>
+        <p class="meta" th:text="#{login.lead}">Sign in to see the catalogue.</p>
+
+        <!-- variant 1: the error and logout messages; ?error and ?logout are set by Spring Security -->
+        <p class="alert alert-error" role="alert" th:if="${param.error}" th:text="#{login.error}">
+            Wrong username or password.</p>
+        <p class="notice" role="status" th:if="${param.logout}" th:text="#{login.logout}">
+            You have been logged out.</p>
+
+        <!-- POST /login is handled by UsernamePasswordAuthenticationFilter; Thymeleaf adds the _csrf field -->
+        <form class="form" th:action="@{/login}" method="post">
+            <div class="field">
+                <label for="username" th:text="#{login.username}">Username</label>
+                <input type="text" id="username" name="username" autocomplete="username" autofocus required>
+            </div>
+            <div class="field">
+                <label for="password" th:text="#{login.password}">Password</label>
+                <input type="password" id="password" name="password" autocomplete="current-password" required>
+            </div>
+            <!-- variant 7: the parameter name Spring Security's remember-me looks for -->
+            <label class="check">
+                <input type="checkbox" id="remember-me" name="remember-me">
+                <span th:text="#{login.remember}">Remember me for 14 days</span>
+            </label>
+            <button type="submit" class="btn btn-block" th:text="#{login.submit}">Log in</button>
+        </form>
+
+        <p class="hint" th:utext="#{login.hint}">Test accounts: <code>user / user123</code>, <code>admin / admin123</code></p>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+</body>
+</html>

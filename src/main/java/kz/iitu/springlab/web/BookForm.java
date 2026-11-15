@@ -2,6 +2,9 @@ package kz.iitu.springlab.web;
 
 import jakarta.validation.constraints.*;
 import kz.iitu.springlab.catalog.Genre;
+import org.springframework.format.annotation.DateTimeFormat;
+
+import java.time.LocalDate;
 
 public class BookForm {
 
@@ -20,6 +23,17 @@ public class BookForm {
     @NotNull(message = "{book.genre.required}")
     private Genre genre;
 
+    /**
+     * Lab 6 variant 7. style = "S-": the SHORT date style of the current locale, so the same
+     * field is typed and shown as 1/6/18 in English, 06.01.2018 in Russian, 06.01.18 in Kazakh.
+     */
+    @PastOrPresent(message = "{book.published.past}")
+    @DateTimeFormat(style = "S-")
+    private LocalDate publishedOn;
+
+    @Isbn                       // lab 6 variant 1: optional, but a filled-in value must be a real ISBN
+    private String isbn;
+
     private boolean available;
 
     // getters and setters for every field
@@ -36,6 +50,12 @@ public class BookForm {
 
     public Genre getGenre() { return genre; }
     public void setGenre(Genre genre) { this.genre = genre; }
+
+    public LocalDate getPublishedOn() { return publishedOn; }
+    public void setPublishedOn(LocalDate publishedOn) { this.publishedOn = publishedOn; }
+
+    public String getIsbn() { return isbn; }
+    public void setIsbn(String isbn) { this.isbn = isbn; }
 
     public boolean isAvailable() { return available; }
     public void setAvailable(boolean available) { this.available = available; }

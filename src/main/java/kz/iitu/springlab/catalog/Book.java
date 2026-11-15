@@ -16,6 +16,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -48,6 +49,19 @@ public class Book {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id")
     private Author author;
+
+    // lab 8 variant 1: the foreign key column book.publisher_id
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "publisher_id")
+    private Publisher publisher;
+
+    // lab 6 variant 7: the publication date
+    @Column(name = "published_on")
+    private LocalDate publishedOn;
+
+    // lab 6 variant 1: ISBN-10 or ISBN-13, checked by @Isbn on the form
+    @Column(length = 17)
+    private String isbn;
 
     @ManyToMany
     @JoinTable(name = "book_tag",
@@ -83,6 +97,15 @@ public class Book {
 
     public Author getAuthor() { return author; }
     public void setAuthor(Author author) { this.author = author; }
+
+    public Publisher getPublisher() { return publisher; }
+    public void setPublisher(Publisher publisher) { this.publisher = publisher; }
+
+    public LocalDate getPublishedOn() { return publishedOn; }
+    public void setPublishedOn(LocalDate publishedOn) { this.publishedOn = publishedOn; }
+
+    public String getIsbn() { return isbn; }
+    public void setIsbn(String isbn) { this.isbn = isbn; }
 
     public Set<Tag> getTags() { return tags; }
     public void addTag(Tag tag) { tags.add(tag); }

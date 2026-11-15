@@ -1,0 +1,83 @@
+# Lab 3: the whole configuration is YAML. application.properties was deleted on purpose.
+# The profile is chosen at start-up, never here:
+#   .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"      -> port 8081, demo books seeded
+#   .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=prod"     -> port 8080
+#   .\mvnw.cmd spring-boot:run                                       -> port 8080, no profile
+spring:
+  application:
+    name: spring-lab-01
+
+  # ---- i18n: EN (default), RU, KK (labs 6 and 10) ----
+  messages:
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false   # otherwise "EN" shows Russian on a Russian Windows
+
+  # ---- Database: an H2 file database, no Docker needed (labs 8-10) ----
+  # ./data/springlab.mv.db keeps the data and the Flyway history between restarts (lab 9, task E).
+  # NON_KEYWORDS=YEAR,VALUE: "year" is a reserved word in H2 2.x and Book has a "year" column.
+  datasource:
+    url: jdbc:h2:file:./data/springlab;NON_KEYWORDS=YEAR,VALUE;AUTO_SERVER=TRUE
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+
+  # http://localhost:<port>/h2-console  (log in as admin first)
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: false
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update          # Flyway owns accounts/audit_log/app_user; Hibernate adds the catalogue tables
+    show-sql: true
+    properties:
+      hibernate.format_sql: true
+      hibernate.generate_statistics: true
+
+  # ---- Lab 7 variant 1 / lab 8 task 4: a Page is serialised as
+  # {"content": [...], "page": {"size", "number", "totalElements", "totalPages"}}
+  data:
+    web:
+      pageable:
+        serialization-mode: via-dto
+
+  # ---- Lab 9: Flyway ----
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080
+
+# ---- Lab 1, 2, 3: application settings ----
+app:
+  owner: Turmakov Akylbek
+  group: IS-2407
+  date-pattern: yyyy-MM-dd HH:mm:ss
+  mail:
+    from: no-reply@iitu.kz
+    retry-count: 3
+    timeout: 5s
+    enabled: true
+  # Lab 3, individual assignment (variant 8): app.export
+  export:
+    formats: [CSV, JSON, PDF]
+    max-rows: 10000
+    # include-header is left out on purpose: it takes its @DefaultValue("true")
+
+logging:
+  level:
+    web: INFO
+    kz.iitu: INFO
+
+# ---- Lab 3, task 5: Actuator ----
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,env,configprops,conditions

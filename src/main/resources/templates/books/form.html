@@ -13,23 +13,7 @@
         <h1 th:text="#{book.new}">New book</h1>
     </div>
 
-    <!-- the book as it will stand on the shelf; filled in by the script below while you type -->
-    <div class="preview">
-        <p class="preview-label" th:text="#{form.preview}">Preview</p>
-        <ol class="shelf">
-            <li id="preview" class="spine spine-0"
-                th:attr="data-title=#{book.title},data-author=#{book.author},data-year=#{book.year},data-genre=#{book.genre}">
-                <span class="spine-no">–</span>
-                <span class="spine-main">
-                    <span class="spine-title is-placeholder">Title</span>
-                    <span class="spine-author is-placeholder">Author</span>
-                </span>
-                <span class="spine-genre is-placeholder">Genre</span>
-                <span class="spine-year is-placeholder">Year</span>
-            </li>
-        </ol>
-    </div>
-
+    <div class="form-layout">
     <form class="form" th:action="@{/books}" th:object="${form}" method="post" novalidate>
 
         <div class="error-summary" role="alert" th:if="${#fields.hasAnyErrors()}">
@@ -70,6 +54,25 @@
             </div>
         </div>
 
+        <!-- lab 6 variant 7: the date is typed and shown in the format of the chosen language -->
+        <div class="field">
+            <label for="publishedOn" th:text="#{book.published}">Publication date</label>
+            <input type="text" th:field="*{publishedOn}" th:errorclass="is-invalid"
+                   th:placeholder="${datePattern}" inputmode="numeric" autocomplete="off"
+                   th:attr="aria-invalid=${#fields.hasErrors('publishedOn')}">
+            <p class="field-hint" th:text="#{book.published.hint(${datePattern})}">Optional. Format: M/d/yy</p>
+            <p class="field-error" th:if="${#fields.hasErrors('publishedOn')}" th:errors="*{publishedOn}">Date error</p>
+        </div>
+
+        <!-- lab 6 variant 1: ISBN with a custom @Isbn constraint (length and checksum) -->
+        <div class="field">
+            <label for="isbn" th:text="#{book.isbn}">ISBN</label>
+            <input type="text" th:field="*{isbn}" th:errorclass="is-invalid" placeholder="978-0-13-468599-1"
+                   th:attr="aria-invalid=${#fields.hasErrors('isbn')}">
+            <p class="field-hint" th:text="#{book.isbn.hint}">Optional. ISBN-10 or ISBN-13, hyphens allowed.</p>
+            <p class="field-error" th:if="${#fields.hasErrors('isbn')}" th:errors="*{isbn}">ISBN error</p>
+        </div>
+
         <label class="check">
             <input type="checkbox" th:field="*{available}">
             <span th:text="#{book.available}">Available</span>
@@ -81,6 +84,24 @@
         </div>
     </form>
 
+    <!-- the card as it will appear in the catalogue; filled in by the script below while you type -->
+    <aside class="preview">
+        <p class="preview-label" th:text="#{form.preview}">Preview</p>
+        <article id="preview" class="card tone-0"
+                 th:attr="data-title=#{book.title},data-author=#{book.author},data-year=#{book.year},data-genre=#{book.genre}">
+            <div class="card-cover">
+                <span class="card-no" th:text="#{card.no} + ' –'">No. –</span>
+                <h3 class="card-title is-placeholder">Title</h3>
+                <span class="card-cover-author is-placeholder">Author</span>
+            </div>
+            <div class="card-body">
+                <span class="chip is-placeholder">Genre</span>
+                <span class="card-year is-placeholder">Year</span>
+            </div>
+        </article>
+    </aside>
+    </div>
+
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
@@ -88,8 +109,8 @@
 <script th:inline="none">
     (function () {
         var form = document.querySelector('form.form');
-        var spine = document.getElementById('preview');
-        if (!form || !spine) { return; }
+        var card = document.getElementById('preview');
+        if (!form || !card) { return; }
 
         var title = form.elements['title'];
         var author = form.elements['author'];
@@ -106,18 +127,18 @@
         }
 
         function put(selector, value, fallback) {
-            var el = spine.querySelector(selector);
+            var el = card.querySelector(selector);
             el.textContent = value || fallback;
             el.classList.toggle('is-placeholder', !value);
         }
 
         function update() {
             var genreText = genre.value ? genre.options[genre.selectedIndex].text : '';
-            put('.spine-title', title.value.trim(), spine.dataset.title);
-            put('.spine-author', author.value.trim(), spine.dataset.author);
-            put('.spine-year', year.value, spine.dataset.year);
-            put('.spine-genre', genreText, spine.dataset.genre);
-            spine.className = 'spine spine-' + cloth(author.value);
+            put('.card-title', title.value.trim(), card.dataset.title);
+            put('.card-cover-author', author.value.trim(), card.dataset.author);
+            put('.card-year', year.value && year.value !== '0' ? year.value : '', card.dataset.year);
+            put('.chip', genreText, card.dataset.genre);
+            card.className = 'card tone-' + cloth(author.value);
         }
 
         form.addEventListener('input', update);

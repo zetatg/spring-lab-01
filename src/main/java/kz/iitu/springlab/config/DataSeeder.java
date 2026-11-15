@@ -5,6 +5,8 @@ import kz.iitu.springlab.catalog.AuthorRepository;
 import kz.iitu.springlab.catalog.Book;
 import kz.iitu.springlab.catalog.BookRepository;
 import kz.iitu.springlab.catalog.Genre;
+import kz.iitu.springlab.catalog.Publisher;
+import kz.iitu.springlab.catalog.PublisherRepository;
 import kz.iitu.springlab.catalog.Tag;
 import kz.iitu.springlab.catalog.TagRepository;
 import org.slf4j.Logger;
@@ -25,8 +27,11 @@ public class DataSeeder implements CommandLineRunner {
     private final AuthorRepository authors;
     private final BookRepository books;
     private final TagRepository tags;
+    private final PublisherRepository publishers;
 
-    public DataSeeder(AuthorRepository authors, BookRepository books, TagRepository tags) {
+    public DataSeeder(AuthorRepository authors, BookRepository books, TagRepository tags,
+                      PublisherRepository publishers) {
+        this.publishers = publishers;
         this.authors = authors;
         this.books = books;
         this.tags = tags;
@@ -48,26 +53,33 @@ public class DataSeeder implements CommandLineRunner {
         Author martin = authors.save(new Author("Robert Martin", "USA"));
         Author walls = authors.save(new Author("Craig Walls", "USA"));
 
-        // the first three get ids 1, 2, 3 - as in lab 7
-        add(bloch, "Effective Java", 2018, javaTag, practices);
-        add(martin, "Clean Code", 2008, practices);
-        add(walls, "Spring in Action", 2022, springTag, javaTag);
-        add(martin, "Clean Architecture", 2017, architecture);
-        add(martin, "The Clean Coder", 2011, practices);
-        add(martin, "Agile Software Development", 2002, architecture, practices);
-        add(walls, "Spring Boot in Action", 2015, springTag);
-        add(bloch, "Java Puzzlers", 2005, javaTag);
+        // lab 8 variant 1: three publishers; Prentice Hall gets four books
+        Publisher addison = publishers.save(new Publisher("Addison-Wesley", "Boston"));
+        Publisher prentice = publishers.save(new Publisher("Prentice Hall", "Upper Saddle River"));
+        Publisher manning = publishers.save(new Publisher("Manning", "Shelter Island"));
 
-        log.info("Seeded {} authors, {} books, {} tags",
-                authors.count(), books.count(), tags.count());
+        // the first three get ids 1, 2, 3 - as in lab 7
+        add(bloch, addison, "Effective Java", 2018, "978-0-13-468599-1", javaTag, practices);
+        add(martin, prentice, "Clean Code", 2008, "978-0-13-235088-4", practices);
+        add(walls, manning, "Spring in Action", 2022, "978-1-61729-757-1", springTag, javaTag);
+        add(martin, prentice, "Clean Architecture", 2017, "978-0-13-449416-6", architecture);
+        add(martin, prentice, "The Clean Coder", 2011, "978-0-13-708107-3", practices);
+        add(martin, prentice, "Agile Software Development", 2002, null, architecture, practices);
+        add(walls, manning, "Spring Boot in Action", 2015, null, springTag);
+        add(bloch, addison, "Java Puzzlers", 2005, "978-0-321-33678-1", javaTag);
+
+        log.info("Seeded {} authors, {} publishers, {} books, {} tags",
+                authors.count(), publishers.count(), books.count(), tags.count());
     }
 
-    private void add(Author author, String title, int year, Tag... bookTags) {
+    private void add(Author author, Publisher publisher, String title, int year, String isbn, Tag... bookTags) {
         Book book = new Book(title, Genre.PROGRAMMING, year);
         for (Tag tag : bookTags) {
             book.addTag(tag);
         }
+        book.setIsbn(isbn);
         author.addBook(book);
+        publisher.addBook(book);
         books.save(book);
     }
 }

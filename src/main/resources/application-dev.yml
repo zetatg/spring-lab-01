@@ -1,0 +1,15 @@
+# Lab 3: the development profile. Also turns on DataSeeder (lab 8), which is @Profile("dev").
+server:
+  port: 8081
+
+app:
+  mail:
+    enabled: false        # no mail is sent in development
+    retry-count: 1
+  export:                 # lab 3 variant 8: overridden for development
+    formats: [CSV]
+    max-rows: 500
+
+logging:
+  level:
+    kz.iitu: DEBUG

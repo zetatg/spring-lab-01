@@ -14,7 +14,9 @@ public class BookMapper {
         Author author = book.getAuthor();
         return new BookResponse(book.getId(), book.getTitle(),
                 author != null ? author.getName() : null,
-                book.getYear(), book.getGenre(), book.getCreatedAt());
+                book.getYear(), book.getGenre(),
+                book.getPublisher() != null ? book.getPublisher().getName() : null,
+                book.getIsbn(), book.getPublishedOn(), book.getCreatedAt());
     }
 
     public List<BookResponse> toResponseList(List<Book> books) {
