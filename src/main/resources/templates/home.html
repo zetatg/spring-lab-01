@@ -9,56 +9,37 @@
 
 <main class="wrap">
 
-    <section class="hero">
-        <div class="hero-text">
-            <h1 th:text="#{home.title}">A small catalogue of books</h1>
-            <p class="lead" th:text="#{home.lead}">Course project for Spring Boot.</p>
-            <p class="actions">
-                <a class="btn" th:href="@{/books}" th:text="#{home.open}">Open the catalogue</a>
-                <a class="btn btn-secondary" sec:authorize="hasRole('ADMIN')" th:href="@{/books/new}" th:text="#{book.new}">New book</a>
-                <a class="btn btn-secondary" sec:authorize="!isAuthenticated()" th:href="@{/login}" th:text="#{nav.login}">Log in</a>
-            </p>
-        </div>
-        <div class="hero-stat">
-            <span class="stat-num" th:text="${total}">8</span>
-            <span class="stat-label" th:text="#{home.count}">Books on the shelves</span>
-            <span class="stat-note" th:text="#{home.authors}">Search by author, filter by genre, add your own.</span>
-        </div>
+    <section class="intro">
+        <h1 th:text="#{home.title}">A small catalogue of books</h1>
+        <p class="lead" th:text="#{home.lead}">Course project for Spring Boot.</p>
+        <p class="meta"><strong th:text="${total}">8</strong> <span th:text="#{home.count}">books on the shelves</span></p>
+        <p class="actions">
+            <a class="btn" th:href="@{/books}" th:text="#{home.open}">Open the catalogue</a>
+            <a class="btn btn-secondary" sec:authorize="hasRole('ADMIN')" th:href="@{/books/new}" th:text="#{book.new}">New book</a>
+            <a class="btn btn-secondary" sec:authorize="!isAuthenticated()" th:href="@{/login}" th:text="#{nav.login}">Log in</a>
+        </p>
     </section>
 
     <section class="block">
         <div class="block-head">
             <h2 th:text="#{home.recent}">Recently added</h2>
-            <a class="link-quiet" th:href="@{/books}" th:text="#{home.all} + ' →'">All books →</a>
+            <a th:href="@{/books}" th:text="#{home.all}">All books</a>
         </div>
-        <ul class="grid">
-            <li th:each="book : ${recent}">
-                <article th:replace="~{fragments/layout :: card(${book})}"></article>
-            </li>
-            <li class="empty" th:if="${#lists.isEmpty(recent)}" th:text="#{catalog.empty}">No books found.</li>
-        </ul>
+        <table th:replace="~{fragments/layout :: catalogue(${recent})}"></table>
     </section>
 
-    <section class="block dev">
+    <section class="block">
         <h2 th:text="#{home.dev}">For developers</h2>
-        <ul class="links">
-            <li>
-                <a th:href="@{/swagger-ui.html}">Swagger UI</a>
-                <span th:text="#{home.swagger}">Interactive documentation of the REST API</span>
-            </li>
-            <li>
-                <a th:href="@{/api/books}">/api/books</a>
-                <span th:text="#{home.api}">The first page of books as JSON</span>
-            </li>
-            <li>
-                <a th:href="@{/v3/api-docs}">/v3/api-docs</a>
-                <span th:text="#{home.docs}">The API description in OpenAPI format</span>
-            </li>
-            <li>
-                <a th:href="@{/h2-console}">/h2-console</a>
-                <span th:text="#{home.console}">Browse the database in the browser (H2 console)</span>
-            </li>
-        </ul>
+        <dl class="links">
+            <dt><a th:href="@{/swagger-ui.html}">Swagger UI</a></dt>
+            <dd th:text="#{home.swagger}">Interactive documentation of the REST API</dd>
+            <dt><a th:href="@{/api/books}">/api/books</a></dt>
+            <dd th:text="#{home.api}">The first page of books as JSON</dd>
+            <dt><a th:href="@{/v3/api-docs}">/v3/api-docs</a></dt>
+            <dd th:text="#{home.docs}">The API description in OpenAPI format</dd>
+            <dt><a th:href="@{/h2-console}">/h2-console</a></dt>
+            <dd th:text="#{home.console}">Browse the database in the browser (H2 console)</dd>
+        </dl>
     </section>
 
 </main>

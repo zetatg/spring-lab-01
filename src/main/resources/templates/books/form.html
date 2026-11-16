@@ -13,7 +13,6 @@
         <h1 th:text="#{book.new}">New book</h1>
     </div>
 
-    <div class="form-layout">
     <form class="form" th:action="@{/books}" th:object="${form}" method="post" novalidate>
 
         <div class="error-summary" role="alert" th:if="${#fields.hasAnyErrors()}">
@@ -84,68 +83,11 @@
         </div>
     </form>
 
-    <!-- the card as it will appear in the catalogue; filled in by the script below while you type -->
-    <aside class="preview">
-        <p class="preview-label" th:text="#{form.preview}">Preview</p>
-        <article id="preview" class="card tone-0"
-                 th:attr="data-title=#{book.title},data-author=#{book.author},data-year=#{book.year},data-genre=#{book.genre}">
-            <div class="card-cover">
-                <span class="card-no" th:text="#{card.no} + ' –'">No. –</span>
-                <h3 class="card-title is-placeholder">Title</h3>
-                <span class="card-cover-author is-placeholder">Author</span>
-            </div>
-            <div class="card-body">
-                <span class="chip is-placeholder">Genre</span>
-                <span class="card-year is-placeholder">Year</span>
-            </div>
-        </article>
-    </aside>
-    </div>
 
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 
-<script th:inline="none">
-    (function () {
-        var form = document.querySelector('form.form');
-        var card = document.getElementById('preview');
-        if (!form || !card) { return; }
-
-        var title = form.elements['title'];
-        var author = form.elements['author'];
-        var year = form.elements['year'];
-        var genre = form.elements['genre'];
-
-        // the same rule as SpineColors.java: hash of the lower-cased name, modulo 5
-        function cloth(name) {
-            var s = name.trim().toLowerCase();
-            if (!s) { return 0; }
-            var h = 0;
-            for (var i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
-            return ((h % 5) + 5) % 5;
-        }
-
-        function put(selector, value, fallback) {
-            var el = card.querySelector(selector);
-            el.textContent = value || fallback;
-            el.classList.toggle('is-placeholder', !value);
-        }
-
-        function update() {
-            var genreText = genre.value ? genre.options[genre.selectedIndex].text : '';
-            put('.card-title', title.value.trim(), card.dataset.title);
-            put('.card-cover-author', author.value.trim(), card.dataset.author);
-            put('.card-year', year.value && year.value !== '0' ? year.value : '', card.dataset.year);
-            put('.chip', genreText, card.dataset.genre);
-            card.className = 'card tone-' + cloth(author.value);
-        }
-
-        form.addEventListener('input', update);
-        form.addEventListener('change', update);
-        update();
-    })();
-</script>
 
 </body>
 </html>

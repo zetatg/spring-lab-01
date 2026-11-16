@@ -5,19 +5,16 @@
 <head th:fragment="head(pageTitle)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="${pageTitle} + ' · ' + #{app.name}">Catalogue · Book Catalogue</title>
+    <title th:text="${pageTitle} + ' — ' + #{app.name}">Catalogue — Book Catalogue</title>
     <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 
 <body>
 
-<!-- active: list | new | none;  langPath: where the EN/RU/KK links should lead -->
+<!-- active: list | new | admin | none;  langPath: where the EN/RU/KZ links lead -->
 <header class="site-header" th:fragment="header(active, langPath)">
     <div class="wrap bar">
-        <a class="brand" th:href="@{/}">
-            <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span th:text="#{app.name}">Book Catalogue</span>
-        </a>
+        <a class="brand" th:href="@{/}" th:text="#{app.name}">Book Catalogue</a>
 
         <nav class="nav" aria-label="Main">
             <a th:href="@{/books}" th:text="#{nav.catalogue}"
@@ -32,49 +29,62 @@
                th:attr="aria-current=${active == 'admin'} ? 'page'">Administration</a>
         </nav>
 
-        <div class="lang" role="group" th:attr="aria-label=#{lang.label}">
-            <a th:href="@{${langPath}(lang='en')}" lang="en" hreflang="en" title="English"
-               th:classappend="${#locale.language == 'en'} ? 'is-active'">EN</a>
-            <a th:href="@{${langPath}(lang='ru')}" lang="ru" hreflang="ru" title="Русский"
-               th:classappend="${#locale.language == 'ru'} ? 'is-active'">RU</a>
-            <a th:href="@{${langPath}(lang='kk')}" lang="kk" hreflang="kk" title="Қазақша"
-               th:classappend="${#locale.language == 'kk'} ? 'is-active'">KZ</a>
-        </div>
+        <div class="bar-right">
+            <span class="lang" th:attr="aria-label=#{lang.label}">
+                <a th:href="@{${langPath}(lang='en')}" lang="en" hreflang="en" title="English"
+                   th:classappend="${#locale.language == 'en'} ? 'is-active'">EN</a>
+                <a th:href="@{${langPath}(lang='ru')}" lang="ru" hreflang="ru" title="Русский"
+                   th:classappend="${#locale.language == 'ru'} ? 'is-active'">RU</a>
+                <a th:href="@{${langPath}(lang='kk')}" lang="kk" hreflang="kk" title="Қазақша"
+                   th:classappend="${#locale.language == 'kk'} ? 'is-active'">KZ</a>
+            </span>
 
-        <!-- task 3.3: the view knows who is looking at it -->
-        <div class="user" sec:authorize="isAuthenticated()">
-            <span class="user-avatar" aria-hidden="true"
-                  th:text="${#strings.toUpperCase(#strings.substring(#authentication.name, 0, 1))}">U</span>
-            <span class="user-info">
+            <!-- lab 10, task 3.3: the view knows who is looking at it -->
+            <span class="user" sec:authorize="isAuthenticated()">
                 <span class="user-name" sec:authentication="name">user</span>
                 <span class="user-roles" sec:authentication="principal.authorities">[ROLE_USER]</span>
+                <!-- logout changes state, so it is a POST form (Thymeleaf adds the _csrf field) -->
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="link-button" th:text="#{nav.logout}">Log out</button>
+                </form>
             </span>
-            <!-- logout changes state, so it is a POST form (Thymeleaf adds the _csrf field) -->
-            <form th:action="@{/logout}" method="post">
-                <button type="submit" class="btn-link" th:text="#{nav.logout}">Log out</button>
-            </form>
+            <a sec:authorize="!isAuthenticated()" th:href="@{/login}" th:text="#{nav.login}">Log in</a>
         </div>
-        <a class="btn btn-small" sec:authorize="!isAuthenticated()"
-           th:href="@{/login}" th:text="#{nav.login}">Log in</a>
     </div>
 </header>
 
-<!-- one book as a catalogue card; the cover colour comes from the author (see SpineColors.java) -->
-<article class="card" th:fragment="card(book)"
-         th:classappend="'tone-' + ${@spineColors.of(book.author?.name)}">
-    <div class="card-cover">
-        <span class="card-no" th:text="#{card.no} + ' ' + ${book.id}">No. 1</span>
-        <h3 class="card-title" th:text="${book.title}">Effective Java</h3>
-        <span class="card-cover-author">
-            <span th:text="${book.author?.name}">Joshua Bloch</span>
-            <span class="card-publisher" th:if="${book.publisher != null}" th:text="${book.publisher.name}">Addison-Wesley</span>
-        </span>
-    </div>
-    <div class="card-body">
-        <span class="chip" th:text="#{${'genre.' + book.genre.name()}}">Programming</span>
-        <span class="card-year" th:text="${book.year}">2018</span>
-    </div>
-</article>
+<!-- the catalogue as a table; used by the catalogue page and the home page -->
+<table class="catalogue" th:fragment="catalogue(books)">
+    <thead>
+    <tr>
+        <th class="col-no" scope="col" th:text="#{card.no}">No.</th>
+        <th scope="col" th:text="#{book.title}">Title</th>
+        <th scope="col" th:text="#{book.author}">Author</th>
+        <th scope="col" th:text="#{book.publisher}">Publisher</th>
+        <th scope="col" th:text="#{book.genre}">Genre</th>
+        <th class="col-year" scope="col" th:text="#{book.year}">Year</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="book : ${books}">
+        <td class="col-no" th:attr="data-label=#{card.no}" th:text="${book.id}">1</td>
+        <td class="col-title" th:attr="data-label=#{book.title}">
+            <div>
+                <span class="title" th:text="${book.title}">Effective Java</span>
+                <span class="isbn" th:if="${book.isbn != null}" th:text="'ISBN ' + ${book.isbn}">ISBN 978-0-13-468599-1</span>
+            </div>
+        </td>
+        <td th:attr="data-label=#{book.author}" th:text="${book.author?.name}">Joshua Bloch</td>
+        <td th:attr="data-label=#{book.publisher}"
+            th:text="${book.publisher != null} ? ${book.publisher.name} : '—'">Addison-Wesley</td>
+        <td th:attr="data-label=#{book.genre}" th:text="#{${'genre.' + book.genre.name()}}">Programming</td>
+        <td class="col-year" th:attr="data-label=#{book.year}" th:text="${book.year}">2018</td>
+    </tr>
+    <tr class="empty" th:if="${#lists.isEmpty(books)}">
+        <td colspan="6" th:text="#{catalog.empty}">No books found.</td>
+    </tr>
+    </tbody>
+</table>
 
 <footer class="site-footer" th:fragment="footer">
     <div class="wrap foot">
