@@ -1,0 +1,14 @@
+# Lab 3: the production profile.
+server:
+  port: 8080
+
+app:
+  mail:
+    enabled: true
+    retry-count: 5
+  export:
+    max-rows: 100000
+
+logging:
+  level:
+    kz.iitu: WARN

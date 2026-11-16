@@ -1,0 +1,12 @@
+# Optional: run against PostgreSQL in Docker (lab 8 setup) instead of H2.
+#   docker run -d --name pg-springlab -e POSTGRES_DB=springlab -e POSTGRES_USER=springlab -e POSTGRES_PASSWORD=springlab -p 5432:5432 postgres:16
+#   .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev,postgres"
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/springlab
+    username: springlab
+    password: springlab
+    driver-class-name: org.postgresql.Driver
+  h2:
+    console:
+      enabled: false

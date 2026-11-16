@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head(#{catalog.title})}">
+    <title>Catalogue</title>
+</head>
+<body>
+
+<header th:replace="~{fragments/layout :: header('list', '/books')}"></header>
+
+<main class="wrap">
+
+    <div class="page-head">
+        <div>
+            <h1 th:text="#{catalog.title}">Catalogue</h1>
+            <p class="meta" th:text="#{catalog.count(${#lists.size(books)})}">Found: 6</p>
+        </div>
+        <a class="btn" sec:authorize="hasRole('ADMIN')" th:href="@{/books/new}" th:text="#{book.new}">New book</a>
+    </div>
+
+    <!-- success message after adding a book (flash attribute) -->
+    <p class="notice" role="status" th:if="${addedTitle != null}"
+       th:text="#{flash.added(${addedTitle})}">Book «Example» has been added</p>
+
+    <form class="filters" th:action="@{/books}" method="get" role="search">
+        <div class="filter">
+            <label for="author" th:text="#{book.author}">Author</label>
+            <input id="author" type="search" name="author" autocomplete="off"
+                   th:value="${author}" th:placeholder="#{filter.placeholder}" placeholder="Author name">
+        </div>
+        <div class="filter">
+            <label for="genre" th:text="#{filter.genre}">Genre</label>
+            <select id="genre" name="genre">
+                <option value="" th:text="#{filter.genre.all}">All genres</option>
+                <option th:each="g : ${genres}" th:value="${g}" th:selected="${g == genre}"
+                        th:text="#{${'genre.' + g.name()}}">Programming</option>
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-secondary" th:text="#{filter.apply}">Search</button>
+            <a th:href="@{/books}" th:text="#{filter.clear}"
+               th:if="${!#strings.isEmpty(author) or genre != null}">Clear</a>
+        </div>
+    </form>
+
+    <table th:replace="~{fragments/layout :: catalogue(${books})}"></table>
+
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+</body>
+</html>

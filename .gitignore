@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### H2 database files ###
+data/
+
+### Lab reports and stray files (kept locally, not in Git) ###
+*.docx
+*.pdf
+data/

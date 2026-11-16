@@ -1,0 +1,181 @@
+package kz.iitu.springlab.web;
+
+import kz.iitu.springlab.catalog.Genre;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import kz.iitu.springlab.catalog.Book;
+import kz.iitu.springlab.catalog.BookNotFoundException;
+import kz.iitu.springlab.catalog.BookService;
+import kz.iitu.springlab.web.dto.BookMapper;
+import kz.iitu.springlab.web.dto.BookRequest;
+import kz.iitu.springlab.web.dto.BookResponse;
+import org.springframework.data.domain.Window;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import jakarta.validation.constraints.NotEmpty;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+@Tag(name = "Books", description = "The catalogue of books")
+@RestController
+@RequestMapping("/api/books")
+public class BookApiController {
+
+    private final BookService service;
+    private final BookMapper mapper;
+
+    public BookApiController(BookService service, BookMapper mapper) {
+        this.service = service;
+        this.mapper = mapper;
+    }
+
+    @Operation(summary = "List books (paged, sorted), optionally filtered by author and/or genre")
+    @ApiResponse(responseCode = "200", description = "A page of books")
+    @GetMapping                                                // 200
+    public Page<BookResponse> list(
+            @Parameter(description = "Exact author name, case-insensitive", example = "Joshua Bloch")
+            @RequestParam(required = false) String author,
+            @Parameter(description = "Genre", example = "PROGRAMMING")
+            @RequestParam(required = false) Genre genre,
+            @PageableDefault(size = 5, sort = "title") Pageable pageable) {
+
+        return service.find(genre, author, pageable).map(mapper::toResponse);
+    }
+    @Operation(summary = "Create several books at once, all or nothing (lab 5, variant 7)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "All books were created; the body lists them"),
+            @ApiResponse(responseCode = "400", description = "One of the records breaks a validation rule",
+                    content = @Content(mediaType = "application/problem+json",
+                            schema = @Schema(implementation = ProblemDetail.class))),
+            @ApiResponse(responseCode = "409", description = "One of the records duplicates an existing book; nothing was saved",
+                    content = @Content(mediaType = "application/problem+json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
+    })
+    @PostMapping("/bulk")                                      // 201 + the list created
+    public ResponseEntity<List<BookResponse>> createBulk(
+            @RequestBody @NotEmpty List<@Valid BookRequest> requests) {
+        List<Book> created = service.createAll(requests.stream()
+                .map(r -> new BookService.BookDraft(r.title(), r.author(), r.year(), r.genre()))
+                .toList());
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponseList(created));
+    }
+
+    @Operation(summary = "Keyset scrolling: three books after the given id (lab 8, variant 7)")
+    @GetMapping("/scroll")
+    public Map<String, Object> scroll(
+            @Parameter(description = "The id of the last book already seen; empty for the first window", example = "3")
+            @RequestParam(required = false) Long after) {
+        Window<Book> window = service.scroll(after);
+        List<BookResponse> content = mapper.toResponseList(window.getContent());
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("content", content);
+        out.put("hasNext", window.hasNext());
+        out.put("nextAfter", content.isEmpty() ? null : content.get(content.size() - 1).id());
+        return out;
+    }
+
+    @Operation(summary = "Search by a fragment of the title, case-insensitive (lab 5, variant 1)")
+    @ApiResponse(responseCode = "200", description = "The matching books; an empty array when nothing matches")
+    @GetMapping("/search")                                     // always 200, never 404
+    public List<BookResponse> search(
+            @Parameter(description = "A fragment of the title", example = "clean")
+            @RequestParam(defaultValue = "") String title) {
+        return mapper.toResponseList(service.searchByTitle(title));
+    }
+
+    @Operation(summary = "Books of one publisher, through the derived query (lab 8, variant 1)")
+    @GetMapping("/by-publisher")
+    public List<BookResponse> byPublisher(
+            @Parameter(description = "Publisher name, case-insensitive", example = "Prentice Hall")
+            @RequestParam String name) {
+        return mapper.toResponseList(service.findByPublisher(name));
+    }
+
+    @Operation(summary = "Find a book by its identifier")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "The book was found"),
+            @ApiResponse(responseCode = "404", description = "No book with this id",
+                    content = @Content(mediaType = "application/problem+json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
+    })
+    @GetMapping("/{id}")                                       // 200 or 404
+    public BookResponse find(
+            @Parameter(description = "Identifier of the book", example = "42")
+            @PathVariable long id) {
+        return mapper.toResponse(service.findById(id)
+                .orElseThrow(() -> new BookNotFoundException(id)));
+    }
+
+    @Operation(summary = "Create a book")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201",
+                    description = "Created; the Location header holds the URI of the new book"),
+            @ApiResponse(responseCode = "400", description = "The body is unreadable or breaks a validation rule",
+                    content = @Content(mediaType = "application/problem+json",
+                            schema = @Schema(implementation = ProblemDetail.class))),
+            @ApiResponse(responseCode = "409", description = "A book with this title and author already exists",
+                    content = @Content(mediaType = "application/problem+json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
+    })
+    @PostMapping                                               // 201 + Location
+    public ResponseEntity<BookResponse> create(
+            @Valid @RequestBody BookRequest request) {
+
+        Book saved = service.create(request.title(), request.author(),
+                request.year(), request.genre());
+        return ResponseEntity
+                .created(URI.create("/api/books/" + saved.getId()))
+                .body(mapper.toResponse(saved));
+    }
+
+    @Operation(summary = "Replace a book (full update)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "The book was updated"),
+            @ApiResponse(responseCode = "400", description = "The body is unreadable or breaks a validation rule",
+                    content = @Content(mediaType = "application/problem+json",
+                            schema = @Schema(implementation = ProblemDetail.class))),
+            @ApiResponse(responseCode = "404", description = "No book with this id",
+                    content = @Content(mediaType = "application/problem+json",
+                            schema = @Schema(implementation = ProblemDetail.class))),
+            @ApiResponse(responseCode = "409", description = "Another book already has this title and author",
+                    content = @Content(mediaType = "application/problem+json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
+    })
+    @PutMapping("/{id}")                                       // 200, 404 or 409
+    public BookResponse update(
+            @Parameter(description = "Identifier of the book", example = "1")
+            @PathVariable long id,
+            @Valid @RequestBody BookRequest request) {
+        return mapper.toResponse(service.update(id, request.title(),
+                request.author(), request.year(), request.genre()));
+    }
+
+    @Operation(summary = "Delete a book")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "The book was deleted; no body"),
+            @ApiResponse(responseCode = "404", description = "No book with this id (also the answer to a repeated DELETE)",
+                    content = @Content(mediaType = "application/problem+json",
+                            schema = @Schema(implementation = ProblemDetail.class)))
+    })
+    @DeleteMapping("/{id}")                                    // 204 or 404
+    public ResponseEntity<Void> delete(
+            @Parameter(description = "Identifier of the book", example = "1")
+            @PathVariable long id) {
+        service.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+}
